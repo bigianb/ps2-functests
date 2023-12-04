@@ -1,5 +1,6 @@
 #include "memcard_test.h"
 #include <cstdio>
+#include <string.h>
 
 #include <tamtypes.h>
 #include <kernel.h>
@@ -51,9 +52,26 @@ bool MemcardTest::run()
 
     const int ARRAY_ENTRIES	= 64;
     sceMcTblGetDir mcDir[ARRAY_ENTRIES] __attribute__((aligned(64)));
-    mcGetDir(0, 0, "/*", 0, ARRAY_ENTRIES - 10, mcDir);
-	mcSync(0, NULL, &ret);
+    mcGetDir(0, 0, "/*", 0, ARRAY_ENTRIES, mcDir);
+    int numEntries;
+	mcSync(0, NULL, &numEntries);
 	printf("mcGetDir returned %d\n\nListing of root directory on memory card:\n\n", ret);
+
+    const char * ourDirName = "FUNCTEST";
+    bool foundOurDir = false;
+
+    for(int i=0; i < numEntries; i++)
+	{
+		if((mcDir[i].AttrFile & MC_ATTR_SUBDIR) == MC_ATTR_SUBDIR) {
+			printf("[DIR] %s\n", mcDir[i].EntryName);
+            if (0 == strcmp((char *)mcDir[i].EntryName, ourDirName)){
+                foundOurDir = true;
+
+            }
+        } else {
+			printf("%s - %d bytes\n", mcDir[i].EntryName, mcDir[i].FileSizeByte);
+        }
+	}
 
     return success;
 }
