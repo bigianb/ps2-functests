@@ -6,10 +6,10 @@ You can do something like this from this directory:
 docker run --name ps2dev -t -i -v .:/home/src -w /home/src ps2dev/ps2dev sh
 ```
 
-You now have a container running. You need to add make and cdrkit, so run:
+You now have a container running. You need to add make and cdrkit, and some other libs so run:
 
 ```
-apk add make cdrkit
+apk add make mpfr mpc mpc1 cdrkit
 ```
 
 you can now run make to build the ps2 ISO file.
