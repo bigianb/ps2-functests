@@ -1,3 +1,23 @@
+## Docker
+An easy way to get up and running is to use the ps2dev docker image.
+You can do something like this from this directory:
+
+```
+docker run --name ps2dev -t -i -v .:/home/src -w /home/src ps2dev/ps2dev sh
+```
+
+You now have a container running. You need to add make and cdrkit, so run:
+
+```
+apk add make cdrkit
+```
+
+you can now run make to build the ps2 ISO file.
+
+
+
+## Native Environment
+
 The following commands can be used to set-up a build environment using
 ubuntu 20.04 LTS under WSL on a Windows 10 machine. This will allow you to compile
 in a bash terminal but edit and access the files from a windows editor - visual studio code for example. This is useful when testing the output using a

@@ -6,7 +6,7 @@ EE_LIBS = -lcdvd -lmc
 .PHONY: all
 
 all: $(EE_BIN) 
-	mkisofs -o ../build/cdread.iso ./fs
+	mkisofs -o ../build/functests.iso ./fs
 
 .PHONY: clean
 clean:

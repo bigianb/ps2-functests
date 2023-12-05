@@ -10,7 +10,10 @@
 
 bool MemcardTest::init()
 {
-    if(mcInit(MC_TYPE_MC) < 0) {
+    printf("Initialising memcard\n");
+    int rval = mcInit(MC_TYPE_MC);
+    printf("mcInit returned %d\n",rval);
+    if( rval < 0) {
 		printf("Failed to initialise memcard server!\n");
 		return false;
 	}
@@ -22,6 +25,7 @@ bool MemcardTest::run()
     printf("Memcard test\n");
     
     if (!init()){
+        printf("Init failed\n");
         return false;
     }
 
@@ -32,7 +36,10 @@ bool MemcardTest::run()
     int mc_Type, mc_Free, mc_Format;
     int ret;
 
-	int rval = mcGetInfo(0, 0, &mc_Type, &mc_Free, &mc_Format);
+    int port = 0;
+    int slot = 0;
+
+	int rval = mcGetInfo(port, slot, &mc_Type, &mc_Free, &mc_Format);
     printf("mcGetInfo returned %d\n",rval);
 	mcSync(0, NULL, &ret);
 	printf("mcGetInfo sync returned %d\n",ret);
@@ -41,7 +48,7 @@ bool MemcardTest::run()
         success = false;
     }
 
-	rval = mcGetInfo(0,0,&mc_Type,&mc_Free,&mc_Format);
+	rval = mcGetInfo(port, slot, &mc_Type,&mc_Free,&mc_Format);
     printf("mcGetInfo returned %d\n",rval);
 	mcSync(0, NULL, &ret);
 	printf("mcGetInfo sync returned %d\n",ret);
@@ -72,6 +79,34 @@ bool MemcardTest::run()
 			printf("%s - %d bytes\n", mcDir[i].EntryName, mcDir[i].FileSizeByte);
         }
 	}
+
+    if (foundOurDir){
+        rval = mcDelete(port, slot, ourDirName);
+        printf("mcDelete returned %d\n",rval);
+        mcSync(0, NULL, &ret);
+        printf("mcDelete sync returned %d\n", ret);
+    }
+
+    rval = mcMkDir(port, slot, ourDirName);
+    printf("mcMkDir returned %d\n",rval);
+    mcSync(0, NULL, &ret);
+    printf("mcMkDir sync returned %d\n", ret);
+
+
+    char cdir[256];
+    rval = mcChdir(port, slot, ourDirName, cdir);
+    printf("mcChdir returned %d\n", rval);
+    mcSync(0, NULL, &ret);
+    printf("mcChdir sync returned %d\n", ret);
+    printf("mcChdir old dir returned '%s'\n", cdir);
+
+    rval = mcChdir(port, slot, "/notthere", cdir);
+    printf("mcChdir returned %d\n", rval);
+    mcSync(0, NULL, &ret);
+    printf("mcChdir sync returned %d\n", ret);
+    printf("mcChdir old dir returned '%s'\n", cdir);
+
+    fflush(nullptr);
 
     return success;
 }
