@@ -9,8 +9,8 @@
 
 bool MemcardTest::init()
 {
-    printf("Initialising memcard\n");
-    int rval = mcInit(MC_TYPE_MC);
+    printf("Initialising memcard using MC_TYPE_XMC\n");
+    int rval = mcInit(MC_TYPE_XMC);
     printf("mcInit returned %d\n", rval);
     if (rval < 0)
     {
@@ -18,6 +18,65 @@ bool MemcardTest::init()
         return false;
     }
     return true;
+}
+
+bool containsDir(sceMcTblGetDir mcDir[], int numEntries, const char* targetDir)
+{
+    bool found = false;
+
+    for (int i = 0; i < numEntries && !found; i++)
+    {
+        if ((mcDir[i].AttrFile & MC_ATTR_SUBDIR) == MC_ATTR_SUBDIR)
+        {
+            if (0 == strcmp((char *)mcDir[i].EntryName, targetDir))
+            {
+                found = true;
+            }
+        }
+    }
+    return found;
+}
+
+void syncDeleteDir(int port, int slot, const char* dirName)
+{
+    int rval = mcDelete(port, slot, dirName);
+    printf("    mcDelete returned %d\n", rval);
+    int ret;
+    mcSync(0, NULL, &ret);
+    printf("    mcDelete sync returned %d\n", ret);
+}
+
+void syncMkDir(int port, int slot, const char* dirName)
+{
+    int rval = mcMkDir(port, slot, dirName);
+    printf("mcMkDir '%s' returned %d\n", dirName, rval);
+    int ret;
+    mcSync(0, NULL, &ret);
+    printf("    mcMkDir sync returned %d\n", ret);
+}
+
+bool syncMcChdir(int port, int slot, const char* dirName, int expectedStatus, const char* expectedReturnDir)
+{
+    bool success = true;
+    char cdir[256];
+    // mcChdir does not zero teminate the return.
+    memset(cdir, 0, 256);
+
+    int rval = mcChdir(port, slot, dirName, cdir);
+    printf("mcChdir '%s' returned %d\n", dirName, rval);
+    int ret;
+    mcSync(0, NULL, &ret);
+    printf("    mcChdir sync returned %d\n", ret);
+    printf("    mcChdir dir returned '%s'\n", cdir);
+    if (ret != expectedStatus){
+        printf(" **** ERROR: Expected '%d' to be returned from mcChdir ****\n", expectedStatus);
+        success = false;
+    }
+    if (strcmp(cdir, expectedReturnDir) != 0){
+        printf(" **** ERROR: Expected dir '%s' to be returned from mcChdir ****\n", expectedReturnDir);
+        success = false;
+    }
+    return success;
 }
 
 bool MemcardTest::run()
@@ -60,103 +119,185 @@ bool MemcardTest::run()
         success = false;
     }
 
-    char cdir[256];
     // Change to root directory
-    rval = mcChdir(port, slot, "/", cdir);
-    printf("mcChdir '%s' returned %d\n", "/", rval);
-    mcSync(0, NULL, &ret);
-    printf("    mcChdir sync returned %d\n", ret);
-    printf("    mcChdir old dir returned '%s'\n", cdir);
-    if (ret != 0){
-        printf(" **** ERROR: Expected 0 to be returned from mcChdir ****\n");
-        success = false;
-    }
-    if (strcmp(cdir, "/") != 0){
-        printf(" **** ERROR: Expected old dir '/' to be returned from mcChdir ****\n");
-        success = false;
-    }
-
+    syncMcChdir(port, slot, "/", 0, "/");
+    
     const int ARRAY_ENTRIES = 64;
     sceMcTblGetDir mcDir[ARRAY_ENTRIES] __attribute__((aligned(64)));
     ret = mcGetDir(0, 0, "/*", 0, ARRAY_ENTRIES, mcDir);
     int numEntries;
     mcSync(0, NULL, &numEntries);
-    printf("mcGetDir /* returned %d and %d entries", ret, numEntries);
+    printf("mcGetDir /* returned %d and %d entries\n", ret, numEntries);
 
     const char *ourDirName = "FUNCTEST";
     const char *ourAbsoluteDirName = "/FUNCTEST";
-    bool foundOurDir = false;
+    const char *ourDotDotDirName = "../FUNCTEST";
 
-    for (int i = 0; i < numEntries; i++)
-    {
-        if ((mcDir[i].AttrFile & MC_ATTR_SUBDIR) == MC_ATTR_SUBDIR)
-        {
-            if (0 == strcmp((char *)mcDir[i].EntryName, ourDirName))
-            {
-                foundOurDir = true;
-            }
-        }
-    }
+    const char *functest2Name = "FUNCTEST2";
 
-    if (foundOurDir)
+    if (containsDir(mcDir, numEntries, ourDirName))
     {
         printf("dir %s exists, so deleting it\n", ourDirName);
-        rval = mcDelete(port, slot, ourDirName);
-        printf("    mcDelete returned %d\n", rval);
-        mcSync(0, NULL, &ret);
-        printf("    mcDelete sync returned %d\n", ret);
+        syncDeleteDir(port, slot, ourDirName);
     }
 
-    rval = mcMkDir(port, slot, ourDirName);
-    printf("mcMkDir '%s' returned %d\n", ourDirName, rval);
-    mcSync(0, NULL, &ret);
-    printf("    mcMkDir sync returned %d\n", ret);
+    if (containsDir(mcDir, numEntries, functest2Name))
+    {
+        printf("dir %s exists, so deleting it\n", functest2Name);
+        syncDeleteDir(port, slot, functest2Name);
+    }
+
+    syncMkDir(port, slot, ourDirName);
+    syncMkDir(port, slot, functest2Name);
     
-    rval = mcChdir(port, slot, ourDirName, cdir);
-    printf("mcChdir '%s' returned %d\n", ourDirName, rval);
-    mcSync(0, NULL, &ret);
-    printf("    mcChdir sync returned %d\n", ret);
-    printf("    mcChdir dir returned '%s'\n", cdir);
-    if (ret != 0){
-        printf(" **** ERROR: Expected 0 to be returned from mcChdir ****\n");
-        success = false;
-    }
-    if (strcmp(cdir, ourAbsoluteDirName) != 0){
-        printf(" **** ERROR: Expected dir '%s' to be returned from mcChdir ****\n", ourAbsoluteDirName);
-        success = false;
-    }
-
-    rval = mcChdir(port, slot, "/notthere", cdir);
-    printf("mcChdir '/notthere' returned %d\n", rval);
-    mcSync(0, NULL, &ret);
-    printf("    mcChdir sync returned %d\n", ret);
-    printf("    mcChdir dir returned '%s'\n", cdir);
-    // Expect -4 to be returned from sync and the old dir to be ourDirName
-    if (ret != -4){
-        printf(" **** ERROR: Expected -4 to be returned from mcChdir ****\n");
-        success = false;
-    }
-    if (strcmp(cdir, ourAbsoluteDirName) != 0){
-        printf(" **** ERROR: Expected dir '%s' to be returned from mcChdir ****\n", ourAbsoluteDirName);
-        success = false;
-    }
+    success &= syncMcChdir(port, slot, ourDirName, 0, ourAbsoluteDirName);
+    success &= syncMcChdir(port, slot, "/notthere", -4, ourAbsoluteDirName);
+    success &= syncMcChdir(port, slot, "/nothere", -4, ourAbsoluteDirName);
 
 
-    rval = mcChdir(port, slot, "/nothere", cdir);
-    printf("mcChdir '/nothere' returned %d\n", rval);
-    mcSync(0, NULL, &ret);
-    printf("    mcChdir sync returned %d\n", ret);
-    printf("    mcChdir dir returned '%s'\n", cdir);
-    // Expect -4 to be returned from sync and the old dir to be ourDirName
-    // Note that the failure to chdir does not change the working dir.
-    if (ret != -4){
-        printf(" **** ERROR: Expected -4 to be returned from mcChdir ****\n");
-        success = false;
-    }
-    if (strcmp(cdir, ourAbsoluteDirName) != 0){
-        printf(" **** ERROR: Expected dir '%s' to be returned from mcChdir ****\n", ourAbsoluteDirName);
-        success = false;
-    }
+    // cd .. beyond the root
+    success &= syncMcChdir(port, slot, "/", 0, "/");
+    success &= syncMcChdir(port, slot, "..", 0, "/");
+    success &= syncMcChdir(port, slot, "../notthere", -4, "/");
+    success &= syncMcChdir(port, slot, ourDotDotDirName, 0, ourAbsoluteDirName);
+    success &= syncMcChdir(port, slot, "../FUNCTEST2", 0, "/FUNCTEST2");
+    success &= syncMcChdir(port, slot, "../../../../FUNCTEST", 0, "/FUNCTEST");
 
     return success;
 }
+
+/*
+          PCSX2 output
+
+Hello
+loadmodule: fname rom0:XSIO2MAN args 0 arg 
+[  525.0118] RegisterLibraryEntries:  sio2man version 1.02
+loadmodule: id 25, ret 0
+loadmodule: fname rom0:XMCMAN args 0 arg 
+[  525.0264] RegisterLibraryEntries:    mcman version 2.03
+loadmodule: id 26, ret 0
+loadmodule: fname rom0:XMCSERV args 0 arg 
+[  525.0317] RegisterLibraryEntries:   mcserv version 1.01
+loadmodule: id 27, ret 0
+Memcard test
+Initialising memcard using MC_TYPE_XMC
+[  525.0359] [EE] Skipping timeout loop at 0x00100D50 -> 0x00100D70
+mcInit returned 0
+Init succeded
+mcGetInfo returned 0
+    mcGetInfo sync returned -1
+    Type: 2 Free: 7562 Format: 1
+mcGetInfo returned 0
+    mcGetInfo sync returned 0
+    Type: 2 Free: 7562 Format: 1
+mcChdir '/' returned 0
+    mcChdir sync returned 0
+    mcChdir dir returned '/'
+mcGetDir /* returned 0 and 3 entries
+dir FUNCTEST exists, so deleting it
+    mcDelete returned 0
+[  525.2720] OSD [MemoryCardSave0]: Memory Card 'Mcd001.ps2' was saved to storage.
+    mcDelete sync returned 0
+dir FUNCTEST2 exists, so deleting it
+    mcDelete returned 0
+    mcDelete sync returned 0
+mcMkDir 'FUNCTEST' returned 0
+    mcMkDir sync returned 0
+mcMkDir 'FUNCTEST2' returned 0
+    mcMkDir sync returned 0
+mcChdir 'FUNCTEST' returned 0
+    mcChdir sync returned 0
+    mcChdir dir returned '/FUNCTEST'
+mcChdir '/notthere' returned 0
+    mcChdir sync returned -4
+    mcChdir dir returned '/FUNCTEST'
+mcChdir '/nothere' returned 0
+    mcChdir sync returned -4
+    mcChdir dir returned '/FUNCTEST'
+mcChdir '/' returned 0
+    mcChdir sync returned 0
+    mcChdir dir returned '/'
+mcChdir '..' returned 0
+    mcChdir sync returned 0
+    mcChdir dir returned '/'
+mcChdir '../notthere' returned 0
+    mcChdir sync returned -4
+    mcChdir dir returned '/'
+mcChdir '../FUNCTEST' returned 0
+    mcChdir sync returned 0
+    mcChdir dir returned '/FUNCTEST'
+mcChdir '../FUNCTEST2' returned 0
+    mcChdir sync returned 0
+    mcChdir dir returned '/FUNCTEST2'
+mcChdir '../../../../FUNCTEST' returned 0
+    mcChdir sync returned 0
+    mcChdir dir returned '/FUNCTEST'
+Memcard tests passed
+That's all folks
+
+
+-------------------------------------------------
+Current Play HLE output
+
+Hello
+Memcard test
+Initialising memcard using MC_TYPE_XMC
+mcInit returned 0
+Init succeded
+mcGetInfo returned 0
+    mcGetInfo sync returned -1
+    Type: 2 Free: 8192 Format: 1
+mcGetInfo returned 0
+    mcGetInfo sync returned 0
+    Type: 2 Free: 8192 Format: 1
+mcChdir '/' returned 0
+    mcChdir sync returned 0
+    mcChdir dir returned '/'
+mcGetDir /* returned 0 and 7 entries
+dir FUNCTEST exists, so deleting it
+    mcDelete returned 0
+    mcDelete sync returned 0
+dir FUNCTEST2 exists, so deleting it
+    mcDelete returned 0
+    mcDelete sync returned 0
+mcMkDir 'FUNCTEST' returned 0
+    mcMkDir sync returned 0
+mcMkDir 'FUNCTEST2' returned 0
+    mcMkDir sync returned 0
+mcChdir 'FUNCTEST' returned 0
+    mcChdir sync returned 0
+    mcChdir dir returned '/'
+ **** ERROR: Expected dir '/FUNCTEST' to be returned from mcChdir ****
+mcChdir '/notthere' returned 0
+    mcChdir sync returned -4
+    mcChdir dir returned '/FUNCTEST'
+mcChdir '/nothere' returned 0
+    mcChdir sync returned -4
+    mcChdir dir returned '/FUNCTEST'
+mcChdir '/' returned 0
+    mcChdir sync returned 0
+    mcChdir dir returned '/FUNCTEST'
+ **** ERROR: Expected dir '/' to be returned from mcChdir ****
+mcChdir '..' returned 0
+    mcChdir sync returned 0
+    mcChdir dir returned '/'
+mcChdir '../notthere' returned 0
+    mcChdir sync returned 0
+    mcChdir dir returned '/'
+ **** ERROR: Expected '-4' to be returned from mcChdir ****
+mcChdir '../FUNCTEST' returned 0
+    mcChdir sync returned 0
+    mcChdir dir returned '/'
+ **** ERROR: Expected dir '/FUNCTEST' to be returned from mcChdir ****
+mcChdir '../FUNCTEST2' returned 0
+    mcChdir sync returned 0
+    mcChdir dir returned '/'
+ **** ERROR: Expected dir '/FUNCTEST2' to be returned from mcChdir ****
+mcChdir '../../../../FUNCTEST' returned 0
+    mcChdir sync returned 0
+    mcChdir dir returned '/'
+ **** ERROR: Expected dir '/FUNCTEST' to be returned from mcChdir ****
+ ***** Memcard tests failed *****
+That's all folks
+
+*/

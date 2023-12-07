@@ -13,27 +13,32 @@ int main()
     SifInitRpc(0);
     sceCdInit(SCECdINIT);
 
-    int sifLoadRet = SifLoadModule("rom0:SIO2MAN", 0, NULL);
+    int sifLoadRet = SifLoadModule("rom0:XSIO2MAN", 0, NULL);
 	if (sifLoadRet < 0) {
-		printf("Failed to load module: SIO2MAN");
+		printf("Failed to load module: XSIO2MAN");
         return -1;
 	}
 
-	sifLoadRet = SifLoadModule("rom0:MCMAN", 0, NULL);
+	sifLoadRet = SifLoadModule("rom0:XMCMAN", 0, NULL);
 	if (sifLoadRet < 0) {
-		printf("Failed to load module: MCMAN");
+		printf("Failed to load module: XMCMAN");
         return -1;
 	}
 
-	sifLoadRet = SifLoadModule("rom0:MCSERV", 0, NULL);
+	sifLoadRet = SifLoadModule("rom0:XMCSERV", 0, NULL);
 	if (sifLoadRet < 0) {
-		printf("Failed to load module: MCSERV");
+		printf("Failed to load module: XMCSERV");
         return -1;
 	}
 
     auto memcardTest = MemcardTest();
-    memcardTest.run();
+    auto success = memcardTest.run();
 
+    if (success){
+        printf("Memcard tests passed\n");
+    } else {
+        printf(" ***** Memcard tests failed *****\n");
+    }
     printf("That's all folks\n");
 
     return 0;
