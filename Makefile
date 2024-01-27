@@ -12,7 +12,7 @@ $(DIRS): | $(TGTDIR)
 
 $(TGTDIR):
 	mkdir -p $(TGTDIR)
-
+	
 clean:
 	rm -f -r *.o $(TGTDIR)
 	for i in $(DIRS); do \

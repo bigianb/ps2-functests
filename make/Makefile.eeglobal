@@ -42,6 +42,9 @@ EE_CXX_COMPILE = $(EE_CXX) $(EE_CXXFLAGS) $(EE_INCS)
 %.o: %.s
 	$(EE_AS) $(EE_ASFLAGS) $< -o $@
 
+%.o: %.dsm
+	$(DVP_AS)  -o $@ $< > $*.lst
+
 $(EE_BIN): $(EE_OBJS)
 	$(EE_CC) -T$(PS2SDK)/ee/startup/linkfile -o $(EE_BIN) $(EE_OBJS) $(EE_LDFLAGS) $(EE_LIBS)
 

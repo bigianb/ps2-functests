@@ -54,3 +54,6 @@ build
 
 # OS Garbage
 .DS_Store
+
+# DVP output
+*.lst
