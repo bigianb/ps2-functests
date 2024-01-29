@@ -10,7 +10,7 @@ all: $(EE_BIN)
 
 .PHONY: clean
 clean:
-	rm -f *.o $(EE_BIN) ../build/ps-functests.iso
+	rm -f *.o $(EE_BIN) vu1/*.o ../build/ps-functests.iso
 
 include $(PS2SDK)/Defs.make
 include ../make/Makefile.pref
