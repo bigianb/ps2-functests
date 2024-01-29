@@ -1,7 +1,7 @@
 
 EE_BIN = ./fs/main.elf
-EE_OBJS = main.o memcard_test.o vu1/vu1.o
-EE_LIBS = -lcdvd -lmc
+EE_OBJS = main.o memcard_test.o vu1/vu1.o vu1/vu1_test.o
+EE_LIBS = -lcdvd -lmc -lpacket2 -ldma
 
 .PHONY: all
 

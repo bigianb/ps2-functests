@@ -1,0 +1,23 @@
+
+.vu
+.align 4
+.global	vu1_code_start
+.global	vu1_code_end
+
+;
+;	parameter initialize(prologue)
+;
+vu1_code_start:
+	NOP				IADDIU VI06, VI00, VI00   
+
+	NOP 		    IADDIU VI01, VI00, 2
+	NOP				NOP
+	NOP				NOP
+	NOP				NOP
+	NOP				ISUBIU VI01, VI01, 1
+	NOP				ISW.W   VI01, 0(VI06)
+	NOP[E]			NOP
+	NOP				NOP
+
+.align 4
+vu1_code_end:	 

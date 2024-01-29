@@ -6,6 +6,7 @@
 #include <sifrpc.h>
 
 #include "memcard_test.h"
+#include "vu1/vu1_test.h"
 
 int main()
 {
@@ -31,6 +32,8 @@ int main()
         return -1;
 	}
 
+    bool allSuccess = true;
+
     auto memcardTest = MemcardTest();
     auto success = memcardTest.run();
 
@@ -39,6 +42,18 @@ int main()
     } else {
         printf(" ***** Memcard tests failed *****\n");
     }
+    allSuccess &= success;
+
+    auto vu1Test = VU1Test();
+    success = vu1Test.run();
+
+    if (success){
+        printf("VU1 tests passed\n");
+    } else {
+        printf(" ***** VU1 tests failed *****\n");
+    }
+    allSuccess &= success;
+
     printf("That's all folks\n");
 
     return 0;
