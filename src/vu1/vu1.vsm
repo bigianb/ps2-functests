@@ -8,7 +8,7 @@
 ;	parameter initialize(prologue)
 ;
 vu1_code_start:
-	NOP				IADDIU VI06, VI00, VI00   
+	NOP				IADDIU VI06, VI00, 0   
 
 	NOP 		    IADDIU VI01, VI00, 2
 	NOP				NOP
