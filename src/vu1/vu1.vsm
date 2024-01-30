@@ -10,7 +10,7 @@
 vu1_code_start:
 	NOP				IADDIU VI06, VI00, 0   
 
-	NOP 		    IADDIU VI01, VI00, 2
+	NOP 		    IADDIU VI01, VI00, 20
 	NOP				NOP
 	NOP				NOP
 	NOP				NOP

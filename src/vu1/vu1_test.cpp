@@ -1,7 +1,9 @@
 
 #include "vu1_test.h"
+#include <cstdio>
 
 #include <tamtypes.h>
+#include <vif_registers.h>
 #include <dma.h>
 #include <packet2.h>
 #include <packet2_utils.h>
@@ -21,6 +23,20 @@ void vu1_upload_micro_program()
 	packet2_free(packet2);
 }
 
+void vif1_idle_wait()
+{
+	bool done = false;
+	do {
+		// In-efficient here is fine ... we're waiting after all.
+		u32 vif1Stat = VIF1_STAT;
+		bool vif1Idle = (vif1Stat & 0x03) == 0;
+		bool waitingEBit = (vif1Stat & 0x4) == 0x04;
+		bool waitingGif = (vif1Stat & 0x8) == 0x08;
+
+		done = vif1Idle && !waitingEBit && !waitingGif;
+	} while (!done);
+}
+
 bool VU1Test::run()
 {
     dma_channel_initialize(DMA_CHANNEL_VIF1, NULL, 0);
@@ -35,9 +51,17 @@ bool VU1Test::run()
 	dma_channel_send_packet2(curr_vif_packet, DMA_CHANNEL_VIF1, 1);
 
 	// need to wait for VU prog to finish.
-	// This isn't the way to do it.
+	// This isn't the way to do it. but probably good enough for an emulator with instant VU
 	dma_channel_wait(DMA_CHANNEL_VIF1, 0);
 
+	vif1_idle_wait();
+
+	// Can we read then when idle or does it need to be in stop mode?
+	// Emulator probably doesn't care.
+	u32* vu1Mem = (u32 *)VU1_MICROMEM1_START;
+	u32 val = *(vu1Mem+3);
+	printf("v1 val = %d\n", val);
+	
 	packet2_free(curr_vif_packet);
-	return true;
+	return val == 19;
 }
