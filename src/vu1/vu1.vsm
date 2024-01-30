@@ -8,16 +8,33 @@
 ;	parameter initialize(prologue)
 ;
 vu1_code_start:
-	NOP				IADDIU VI06, VI00, 0   
+	NOP				IADDIU VI06, VI00, 0
 
-	NOP 		    IADDIU VI01, VI00, 20
+	NOP 		    IADDIU VI01, VI00, 2
 	NOP				NOP
 	NOP				NOP
 	NOP				NOP
 	NOP				ISUBIU VI01, VI01, 1
-	NOP				ISW.W   VI01, 0(VI06)
+	NOP				IBEQ VI01, VI00, btest_l1
+	NOP				ISUBIU VI01, VI01, 1
+	NOP				IBNE VI01, VI00, btest_l2
+	NOP				NOP
+	NOP				IADDIU VI02, VI00, 3
+	NOP				ISW.W   VI02, 0(VI06)
 	NOP[E]			NOP
 	NOP				NOP
 
+btest_l1:
+	NOP				IADDIU VI02, VI00, 1
+	NOP				ISW.W   VI02, 0(VI06)
+	NOP[E]			NOP
+	NOP				NOP
+
+btest_l2:
+	NOP				IADDIU VI02, VI00, 2
+	NOP				ISW.W   VI02, 0(VI06)
+	NOP[E]			NOP
+	NOP				NOP
 .align 4
 vu1_code_end:	 
+

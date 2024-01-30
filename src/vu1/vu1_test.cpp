@@ -63,5 +63,5 @@ bool VU1Test::run()
 	printf("v1 val = %d\n", val);
 	
 	packet2_free(curr_vif_packet);
-	return val == 19;
+	return val == 2;
 }
